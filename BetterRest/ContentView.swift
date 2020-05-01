@@ -17,12 +17,14 @@ struct ContentView: View {
     @State private var showingAlert = false
     
     var body: some View {
-        
         NavigationView {
             Form {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("When do you want to wake up?")
+                Section(header: Text("Current recommended bedtime").font(.headline)) {
+                    Text("\(getFinalUserMsg())")
                         .font(.headline)
+                }
+                
+                Section(header: Text("When do you want to wake up?").font(.headline)) {
                     
                     DatePicker("Please enter a time", selection: $wakeUP, displayedComponents: .hourAndMinute)
                         .labelsHidden()
@@ -30,36 +32,25 @@ struct ContentView: View {
                     
                 }
                 
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Desired amount of sleep")
-                        .font(.headline)
-                    
-                    Stepper(value: $sleepAmount, in: 4...12, step: 0.25) {
-                        Text("\(sleepAmount, specifier: "%g"  ) hours")
-                    }
+                Section(header: Text("Desired amount of sleep")
+                    .font(.headline)) {
+                        Stepper(value: $sleepAmount, in: 4...12, step: 0.25) {
+                            Text("\(sleepAmount, specifier: "%g"  ) hours")
+                        }
                 }
                 
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Daily coffee intake")
-                        .font(.headline)
-                    
-                    Stepper(value: $coffeeAmount, in: 1...20) {
-                        if 1 == coffeeAmount {
-                            Text("1 cup")
-                        } else {
-                            Text("\(coffeeAmount) cups")
+                Section(header: Text("Daily coffee intake").font(.headline)) {
+                    Picker("Please enter how many cups of coffee", selection: $coffeeAmount) {
+                        ForEach(1..<21) { indexer in
+                            Text("\(indexer)")
                         }
                     }
+                    .labelsHidden()
                 }
-            } // VStack
-                .navigationBarTitle("BetterRest")
-                .navigationBarItems(trailing:
-                    Button(action: calculateButton) {
-                        Text("Calculate")
-                    }
-            )
-                .alert(isPresented: $showingAlert) {
-                    Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+            }
+            .navigationBarTitle("BetterRest")
+            .alert(isPresented: $showingAlert) {
+                Alert(title: Text(alertTitle), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
         }
     }
@@ -69,6 +60,34 @@ struct ContentView: View {
         components.hour = 7
         components.minute = 0
         return Calendar.current.date(from: components) ?? Date()
+    }
+
+    //  Day 28 - Challenge 3.
+    // "Change the user interface so that it always shows their
+    //  recommended bedtime using a nice and large font. You
+    //  should be able to remove the “Calculate” button entirely.
+    func getFinalUserMsg() -> String {
+        let model = SleepCalculator()
+        
+        let components = Calendar.current.dateComponents([.hour, .minute], from: wakeUP)
+        let hour = (components.hour ?? 0) * 60 * 60
+        let minute = (components.minute ?? 0) * 60
+        let userMsg : String
+        
+        do {
+            let prediction = try model.prediction(wake: Double(hour + minute), estimatedSleep: sleepAmount, coffee: Double(coffeeAmount))
+            
+            let sleepTime = wakeUP - prediction.actualSleep
+
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            
+            userMsg = formatter.string(from: sleepTime)
+        } catch {
+            userMsg = "Error with calculation"
+        }
+        
+        return userMsg
     }
     
     func calculateButton() {
