@@ -36,13 +36,11 @@ struct ContentView: View {
                 }
                 
                 Section(header: Text("Daily coffee intake").font(.headline)) {
-                    Stepper(value: $coffeeAmount, in: 1...20) {
-                        if 1 == coffeeAmount {
-                            Text("1 cup")
-                        } else {
-                            Text("\(coffeeAmount) cups")
+                    Picker("Please enter how many cups of coffee", selection: $coffeeAmount) {
+                        ForEach(1..<21) { indexer in
+                            Text("\(indexer)")
                         }
-                    }
+                    }.labelsHidden()
                 }
             } // Form
                 .navigationBarTitle("BetterRest")
